@@ -1,0 +1,56 @@
+openapi: 3.0.0
+info:
+  title: Socratic Tutor Service
+  version: 1.0.0
+  description: 供Dify等平台调用的苏格拉底式代码学习导师Skill接口
+servers:
+  - url: http://172.17.0.1:8083
+paths:
+  /api/v1/socratic/ask:
+    post:
+      summary: 请求文本数据
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AskRequest'
+      responses:
+        '200':
+          description: 请求完成
+  /healthz:
+    get:
+      summary: 检查方法是否正确
+      responses:
+        '200':
+          description: 服务运行正常
+
+components:
+  schemas:
+    AskRequest:
+      type: object
+      required:
+        - session_id
+        - question
+      properties:
+        session_id:
+          type: string
+        question:
+          type: string
+    AskResponse:
+      type: object
+      required:
+        - status
+        - session_id
+        - answer
+      properties:
+        status:
+          type: string
+        session_id:
+          type: string
+        answer:
+          type: string
+  securitySchemes:
+    ApiKeyAuth:
+      type: http
+      scheme: bearer

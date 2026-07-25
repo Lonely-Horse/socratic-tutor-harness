@@ -3,54 +3,51 @@ package main
 import (
 	"flag"
 	"fmt"
+	"net/http"
+	"os"
+	"path/filepath"
 	"socratic-tutor-harness/internal/tutor"
+	"time"
 )
 
 func main() {
-	var question string
-	var skill string
-	var session string
-	flag.StringVar(&question, "question", "你好", "问题")
-	flag.StringVar(&skill, "skill", "init", "技能")
-	flag.StringVar(&session, "session", "default", "话题")
+	var addr string
+	flag.StringVar(&addr, "addr", "0.0.0.0:8083", "地址")
 	flag.Parse()
 
-	DataBasePath := "prompts/data.db"
-	db, err := tutor.BuildDatabase(DataBasePath)
+	dataDir := "data"
+	err := os.MkdirAll(dataDir, 0755)
 	if err != nil {
-		fmt.Printf("The question have some error\ndetail: %s", err)
+		fmt.Printf("The dir didn't make,detail: %s", err)
 		return
 	}
+
+	dbPath := filepath.Join(dataDir, "tutor.db")
+	db, err := tutor.BuildDatabase(dbPath)
+	if err != nil {
+		fmt.Printf("The database didn't build,detail: %s", err)
+		return
+	}
+
 	defer db.Close()
 
-	prompt, err := tutor.BuildSystemPrompt(skill)
-	if err != nil {
-		fmt.Printf("The question have some error,\ndetail: %s\n", err)
-		return
+	socraticServer := &tutor.SocraticServer{DB: db}
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/api/v1/socratic/ask", socraticServer.HandleAsk)
+	mux.HandleFunc("/healthz", socraticServer.HandleHealthz)
+
+	httpServer := &http.Server{
+		Addr:         addr,
+		Handler:      mux,
+		ReadTimeout:  10 * time.Second,
+		WriteTimeout: 130 * time.Second,
+		IdleTimeout:  60 * time.Second,
 	}
 
-	data, err := tutor.LoadMessages(db, session)
+	fmt.Printf("The tutor server on %s", httpServer.Addr)
+	err = httpServer.ListenAndServe()
 	if err != nil {
-		fmt.Printf("The LoadMessage have some problem,detail: %s", err)
-		return
+		fmt.Printf("The server didn't listen on %s,detail: %s", httpServer.Addr, err)
 	}
-
-	answer, err := tutor.AskLLM(prompt, question, data)
-	if err != nil {
-		fmt.Printf("The askLLM have some problem\ndetail:%s\n", err)
-		return
-	}
-
-	err = tutor.SaveMessage(db, session, "user", question)
-	if err != nil {
-		fmt.Printf("The SaveMessage to user model have some problem,detail: %s\n", err)
-		return
-	}
-	err = tutor.SaveMessage(db, session, "assistant", answer)
-	if err != nil {
-		fmt.Printf("The SaveMessage to assisant model have some problem,detail: %s\n", err)
-		return
-	}
-
-	fmt.Printf("The LLM's answer:\n%s\n", answer)
 }

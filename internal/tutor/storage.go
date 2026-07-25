@@ -3,8 +3,15 @@ package tutor
 import (
 	"database/sql"
 	"fmt"
+	"log/slog"
+	"os"
 
 	_ "github.com/glebarez/go-sqlite"
+)
+
+const (
+	PayloadLimitBytes = 30 * 1024
+	RecentRawLimit    = 8
 )
 
 func BuildDatabase(dbPath string) (*sql.DB, error) {
@@ -34,6 +41,17 @@ func BuildDatabase(dbPath string) (*sql.DB, error) {
 		database.Close()
 		return nil, fmt.Errorf("The database open/created failed,detail: %s", err)
 	}
+	_, err = database.Exec(`CREATE TABLE IF NOT EXISTS session_summary(
+		session_id TEXT PRIMARY KEY,
+		summary_text TEXT NOT NULL,
+		until_id INTEGER NOT NULL,
+		update_at DATETIME DEFAULT CURRENT_TIMESTAMP 
+	);`)
+	if err != nil {
+		database.Close()
+		return nil, fmt.Errorf("The database open/created failed,detail: %s", err)
+	}
+
 	return database, nil
 }
 
@@ -93,4 +111,96 @@ func LoadMessages(db *sql.DB, sessionID string) ([]Message, error) {
 	}
 
 	return message, nil
+}
+
+func LoadMessagesWithID(db *sql.DB, sessionID string) ([]StoredMessage, error) {
+	if sessionID == "" {
+		return nil, fmt.Errorf("The sessionID is rmpty")
+	}
+
+	rows, err := db.Query(`SELECT id,role,content FROM history WHERE session_id = ? ORDER BY id ASC`, sessionID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var id int64
+	var role, content string
+	var list []StoredMessage
+	for rows.Next() {
+		err := rows.Scan(&id, &role, &content)
+		if err != nil {
+			return nil, err
+		}
+		list = append(list, StoredMessage{
+			ID:      id,
+			Role:    role,
+			Content: content,
+		})
+	}
+	err = rows.Err()
+	if err != nil {
+		return nil, err
+	}
+
+	return list, nil
+}
+
+func SaveSummary(db *sql.DB, sessionID, summaryText string, untilID int64) error {
+	if sessionID == "" || summaryText == "" {
+		return fmt.Errorf("The sessionID or summaryText is empty")
+	}
+
+	_, err := db.Exec(`INSERT INTO session_summary (session_id,summary_text,until_id) 
+		VALUES (?,?,?)
+		ON CONFLICT(session_id) DO UPDATE SET 
+		  summary_text = excluded.summary_text,
+		  until_id = excluded.until_id,
+		  update_at = CURRENT_TIMESTAMP`,
+		sessionID, summaryText, untilID)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func LoadSummary(db *sql.DB, sessionID string) (SessionSummary, error) {
+	if sessionID == "" {
+		return SessionSummary{}, fmt.Errorf("The sessionID is empty")
+	}
+
+	row := db.QueryRow(`SELECT summary_text,until_id FROM session_summary WHERE session_id = ?`, sessionID)
+
+	var summary_text string
+	var until_id int64
+	err := row.Scan(&summary_text, &until_id)
+	if err == sql.ErrNoRows {
+		return SessionSummary{}, nil
+	}
+	if err != nil {
+		return SessionSummary{}, err
+	}
+
+	sessionsummary := SessionSummary{
+		SessionID:   sessionID,
+		SummaryText: summary_text,
+		UntilID:     until_id,
+	}
+
+	return sessionsummary, nil
+}
+
+func AppendEventLog(logPath string, event string, attrs ...any) error {
+	file, err := os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	handler := slog.NewTextHandler(file, nil)
+	logger := slog.New(handler)
+
+	logger.Info(event, attrs...)
+
+	return nil
 }

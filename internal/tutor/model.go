@@ -15,3 +15,29 @@ type ApiResponse struct {
 		Message Message `json:"message"`
 	} `json:"choices"`
 }
+
+type SessionSummary struct {
+	SessionID   string
+	SummaryText string
+	UntilID     int64
+}
+
+type StoredMessage struct {
+	ID      int64
+	Role    string
+	Content string
+}
+
+type AskRequest struct {
+	SessionID string `json:"session_id"`
+	Question  string `json:"question"`
+	Skill     string `json:"skill"`
+}
+
+type AskResponse struct {
+	Status    string `json:"status"`
+	SessionID string `json:"session_id,omitempty"`
+	Answer    string `json:"answer,omitempty"`
+	ErrorCode string `json:"error_code,omitempty"`
+	Message   string `json:"message,omitempty"`
+}

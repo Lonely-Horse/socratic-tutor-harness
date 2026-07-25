@@ -7,10 +7,9 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"time"
 )
 
-func AskLLM(SystemPrompt, UserQuestion string, Data []Message) (string, error) {
+func AskLLM(ctx context.Context, SystemPrompt, UserQuestion string, Data []Message) (string, error) {
 	apiKey := os.Getenv("Secret_Token_Key")
 	apiUrl := os.Getenv("Secret_Token_Url")
 	if apiKey == "" || apiUrl == "" {
@@ -22,8 +21,9 @@ func AskLLM(SystemPrompt, UserQuestion string, Data []Message) (string, error) {
 	tmpData = append(tmpData, Data...)
 	tmpData = append(tmpData, Message{Role: "user", Content: UserQuestion})
 
+	Model := os.Getenv("Secret_Token_Model")
 	Pay1 := Payload{
-		Model:    "grok-4.5",
+		Model:    Model,
 		Messages: tmpData,
 	}
 
@@ -31,9 +31,6 @@ func AskLLM(SystemPrompt, UserQuestion string, Data []Message) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("The struct isn't Marshal,detail: %s", err)
 	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
-	defer cancel()
 
 	client := &http.Client{}
 	var apiResp ApiResponse

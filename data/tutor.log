@@ -1,0 +1,6 @@
+time=2026-07-25T20:40:48.267+08:00 level=INFO msg=save_message_failed user=err !BADKEY="The err is attempt to write a readonly database (1032)"
+time=2026-07-25T20:40:48.268+08:00 level=INFO msg=save_message_failed role=assistant err="The err is attempt to write a readonly database (1032)"
+time=2026-07-25T20:44:10.816+08:00 level=INFO msg=save_message_failed user=err !BADKEY="The err is attempt to write a readonly database (1032)"
+time=2026-07-25T20:44:10.816+08:00 level=INFO msg=save_message_failed role=assistant err="The err is attempt to write a readonly database (1032)"
+time=2026-07-25T20:44:16.397+08:00 level=INFO msg=save_message_failed user=err !BADKEY="The err is attempt to write a readonly database (1032)"
+time=2026-07-25T20:44:16.398+08:00 level=INFO msg=save_message_failed role=assistant err="The err is attempt to write a readonly database (1032)"
