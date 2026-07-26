@@ -16,8 +16,8 @@ RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o tutor-service cmd/tuto
 FROM alpine:3.18
 
 RUN apk add --no-cache ca-certificates && \
-    addgroup -S appgroup && \
-    adduser -S appuser -G appgroup
+    addgroup -g 1000 -S appgroup && \
+    adduser -u 1000 -S appuser -G appgroup
 
 WORKDIR /app
 

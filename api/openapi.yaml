@@ -4,7 +4,7 @@ info:
   version: 1.0.0
   description: 供Dify等平台调用的苏格拉底式代码学习导师Skill接口
 servers:
-  - url: http://172.17.0.1:8083
+  - url: http://socratic-tutor:8083
 paths:
   /api/v1/socratic/ask:
     post:

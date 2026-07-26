@@ -1,6 +1,6 @@
 services:
   socratic-tutor:
-    image: 100.87.250.21:5000/socratic-tutor:1.0.0
+    image: 100.87.250.21:5000/socratic-tutor:1.0.1
     container_name: socratic-tutor
     ports:
       - "8083:8083"
