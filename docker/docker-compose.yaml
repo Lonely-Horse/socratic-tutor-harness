@@ -9,8 +9,8 @@ services:
       - Secret_Token_Url=${Secret_Token_Url}
       - Secret_Token_Model=${Secret_Token_Model}
     volumes:
-      - ./data:/app/data
-    networksL
+      - ../data:/app/data
+    networks:
       - dify_net
     restart: unless-stopped
 
