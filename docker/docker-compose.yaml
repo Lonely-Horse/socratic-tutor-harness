@@ -1,0 +1,20 @@
+services:
+  socratic-tutor:
+    image: 100.87.250.21:5000/socratic-tutor:1.0.0
+    container_name: socratic-tutor
+    ports:
+      - "8083:8083"
+    environment:
+      - Secret_Token_Key=${Secret_Token_Key}
+      - Secret_Token_Url=${Secret_Token_Url}
+      - Secret_Token_Model=${Secret_Token_Model}
+    volumes:
+      - ./data:/app/data
+    networksL
+      - dify_net
+    restart: unless-stopped
+
+networks:
+  dify_net:
+    external: true
+    name: docker_default
