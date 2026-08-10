@@ -13,7 +13,6 @@ services:
     networks:
       - dify_net
     restart: unless-stopped
-
 networks:
   dify_net:
     external: true

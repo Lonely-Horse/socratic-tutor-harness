@@ -103,8 +103,19 @@ go build -o socratic-tutor-service cmd/tutor/main.go
 ./socratic-tutor-service -addr 0.0.0.0:8083
 ```
 
-### 3. Dify 接入配置
-1. 在 Dify 中选择 **"工具" -> "自定义工具"**。
-2. 复制项目下的 `api/openapi.yaml` 文件的 YAML 内容。
-3. 修改配置中的 `servers.url` 为你服务运行的真实局域网/公网 IP 地址。
-4. 如果部署在内网，需在 Dify 后台配置环境变量 `SSRF_ALLOW_PRIVATE_IP=true` 以放行内网 IP。
+### 3. Dify 接入与网关中转配置
+
+由于项目支持通过 [homelab-telemetry 网关](https://github.com/Lonely-Horse/homelab-telemetry) 进行反向代理暴露与统一指标统计，**直接访问后端与通过网关中转在 URL 及接口路径上存在明确差异**。
+
+同时，在 Docker 容器化部署中，本项目默认与网关共同加入 **Dify 的默认虚拟网络**（在外部配置为 `dify_net` / `docker_default`），以实现容器名称 DNS 互通。
+
+#### 方式 A：通过反向代理网关接入（推荐）
+直接导入仓库下的 `api/openapi.yaml` 文件即可，其默认契约已面向网关配置：
+- **服务根地址（`servers.url`）**：指向网关地址，例如 `http://100.87.126.53:8085`。
+- **接口路径（`paths`）**：使用网关暴露的代理前缀路径，即 `/api/socratic/ask`（网关会自动剥离前缀并将其翻译为后端的 `/api/v1/socratic/ask`）。
+
+#### 方式 B：不通过网关，直接直连后端服务
+如果选择绕过网关直接请求 `socratic-tutor` 原生服务，**必须同时修改 OpenAPI 协议中的 `servers.url` 和 `paths` 路径**：
+1. **修改 `servers.url`**：改为 `socratic-tutor` 原生服务的监听地址与端口，如 `http://socratic-tutor:8083` 或 `http://127.0.0.1:8083`。
+2. **修改 `paths`**：必须将接口路径恢复为后端真实注册的路径 `/api/v1/socratic/ask`（不能使用 `/api/socratic/ask`，否则原生后端将无法匹配路由并返回 404）。
+3. **内网放行**：如果部署在内网环境，需在 Dify 后台配置环境变量 `SSRF_ALLOW_PRIVATE_IP=true` 以放行私有 IP。
